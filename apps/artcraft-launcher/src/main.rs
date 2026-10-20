@@ -24,6 +24,7 @@ use std::time::Duration;
 use artcraft_launcher_core::protocol::Backend;
 use artcraft_launcher_native::single_instance::{self, Instance};
 use artcraft_launcher_native::{NativeBackend, login};
+use artcraft_launcher_ui_egui::settings::Filter;
 use artcraft_launcher_ui_egui::theme::Tokens;
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings, TitleBar};
 use eframe::wgpu::rwh::{HasDisplayHandle, RawDisplayHandle};
@@ -507,7 +508,7 @@ impl Launcher {
     fn start(&mut self, settings: Option<Settings>, waker: &Arc<Waker>) {
         self.started = true;
         if let Some(settings) = settings {
-            self.ui.settings = settings;
+            self.restore_saved_settings(settings);
         }
         self.waker = Some(waker.clone());
         let (wake, on_quit) = (waker.clone(), waker.clone());
@@ -516,6 +517,15 @@ impl Launcher {
             Err(e) => log::warn!("no tray icon: {e}"),
         }
         self.host.tray = self.tray.is_some();
+    }
+
+    fn restore_saved_settings(&mut self, mut settings: Settings) {
+        // `LauncherUi::new` sees defaults before the shell loads persisted settings. Filters
+        // removed from the 0.6 toolbar must be cleared at this later load boundary too.
+        if !matches!(settings.filter, Filter::All | Filter::Hidden) {
+            settings.filter = Filter::All;
+        }
+        self.ui.settings = settings;
     }
 
     /// Readies the launcher for a new window. Unless the launcher started in the tray, the first
@@ -812,6 +822,18 @@ mod tests {
         let seen = Arc::new(Seen { clock: AtomicI64::new(NOW), ..Seen::default() });
         let (show, show_requests) = channel();
         (Launcher::new(Box::new(Quiet(seen.clone())), show_requests, None), show, seen)
+    }
+
+    #[test]
+    fn obsolete_saved_filters_are_reset_when_desktop_settings_load() {
+        use artcraft_launcher_ui_egui::settings::Filter;
+
+        let (mut launcher, _show, _) = launcher();
+        for filter in [Filter::Installed, Filter::Updates, Filter::NotInstalled] {
+            launcher.restore_saved_settings(Settings { filter, last_check: Some(NOW), ..Settings::default() });
+            assert_eq!(launcher.ui.settings.filter, Filter::All, "{filter:?}");
+            assert_eq!(launcher.ui.settings.last_check, Some(NOW));
+        }
     }
 
     #[test]
