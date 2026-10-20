@@ -24,7 +24,6 @@ use std::time::Duration;
 use artcraft_launcher_core::protocol::Backend;
 use artcraft_launcher_native::single_instance::{self, Instance};
 use artcraft_launcher_native::{NativeBackend, login};
-use artcraft_launcher_ui_egui::settings::Filter;
 use artcraft_launcher_ui_egui::theme::Tokens;
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings, TitleBar};
 use eframe::wgpu::rwh::{HasDisplayHandle, RawDisplayHandle};
@@ -522,9 +521,7 @@ impl Launcher {
     fn restore_saved_settings(&mut self, mut settings: Settings) {
         // `LauncherUi::new` sees defaults before the shell loads persisted settings. Filters
         // removed from the 0.6 toolbar must be cleared at this later load boundary too.
-        if !matches!(settings.filter, Filter::All | Filter::Hidden) {
-            settings.filter = Filter::All;
-        }
+        settings.migrate();
         self.ui.settings = settings;
     }
 

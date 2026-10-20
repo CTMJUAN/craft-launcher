@@ -1592,6 +1592,31 @@ fn the_toolbar_has_no_filter_dropdown() {
 }
 
 #[test]
+fn saved_filters_are_migrated_on_ui_construction() {
+    use artcraft_launcher_ui_egui::settings::Filter;
+
+    for (filter, expected) in [
+        (Filter::All, Filter::All),
+        (Filter::Installed, Filter::All),
+        (Filter::Updates, Filter::All),
+        (Filter::NotInstalled, Filter::All),
+        (Filter::Hidden, Filter::Hidden),
+    ] {
+        let backend = Fake {
+            events: Vec::new(),
+            sent: Rc::default(),
+            manage: true,
+            pictures: Rc::default(),
+            asked: Vec::new(),
+            clock: Rc::new(Cell::new(NOW)),
+        };
+        let ui = LauncherUi::new(&egui::Context::default(), Box::new(backend), Settings { filter, last_check: Some(NOW), ..Settings::default() });
+        assert_eq!(ui.settings.filter, expected, "{filter:?}");
+        assert_eq!(ui.settings.last_check, Some(NOW));
+    }
+}
+
+#[test]
 fn narrow_header_keeps_the_view_switch_clear_of_brand_text() {
     use artcraft_launcher_ui_egui::TitleBar;
     for theme in [egui::Theme::Dark, egui::Theme::Light] {
