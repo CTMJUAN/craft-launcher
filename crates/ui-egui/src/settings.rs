@@ -19,6 +19,7 @@ pub enum ViewMode {
 pub enum Filter {
     #[default]
     All,
+    // These three no longer appear in the toolbar but must remain deserializable from old settings.
     Installed,
     Updates,
     NotInstalled,

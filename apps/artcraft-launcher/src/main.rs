@@ -822,13 +822,16 @@ mod tests {
     }
 
     #[test]
-    fn obsolete_saved_filters_are_reset_when_desktop_settings_load() {
+    fn saved_filters_are_migrated_when_desktop_settings_load() {
         use artcraft_launcher_ui_egui::settings::Filter;
 
         let (mut launcher, _show, _) = launcher();
-        for filter in [Filter::Installed, Filter::Updates, Filter::NotInstalled] {
+        // `start` also creates a native tray, which macOS requires on the main thread.
+        for (filter, expected) in
+            [(Filter::Installed, Filter::All), (Filter::Updates, Filter::All), (Filter::NotInstalled, Filter::All), (Filter::Hidden, Filter::Hidden)]
+        {
             launcher.restore_saved_settings(Settings { filter, last_check: Some(NOW), ..Settings::default() });
-            assert_eq!(launcher.ui.settings.filter, Filter::All, "{filter:?}");
+            assert_eq!(launcher.ui.settings.filter, expected, "{filter:?}");
             assert_eq!(launcher.ui.settings.last_check, Some(NOW));
         }
     }
