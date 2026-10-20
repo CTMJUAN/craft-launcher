@@ -19,7 +19,8 @@ pub enum ViewMode {
 pub enum Filter {
     #[default]
     All,
-    // These three no longer appear in the toolbar but must remain deserializable from old settings.
+    // PR #527 removed these three toolbar filters. Keep them deserializable for saved settings;
+    // issue #678 explains why startup migrates their old values to All.
     Installed,
     Updates,
     NotInstalled,
